@@ -1,4 +1,4 @@
-# Pure Rust CSIDH Implementation
+# Pure Rust CSIDH Implementation (feat. Serde)
 
 This repo is an implementation of the CSIDH algorithm, as described in the paper
 here: [CSIDH Paper](https://eprint.iacr.org/2018/383.pdf)

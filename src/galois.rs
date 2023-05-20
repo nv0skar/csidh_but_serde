@@ -1,11 +1,12 @@
-use std::ops::{Add, Sub, Mul, Div};
 use rand::{CryptoRng, Rng};
+use serde::{Deserialize, Serialize};
+use std::ops::{Add, Div, Mul, Sub};
 
 use crate::global::*;
 
 pub const LIMBS: usize = 8;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct LargeUint {
     pub elements: [u64; LIMBS],
 }
@@ -117,7 +118,7 @@ pub struct GaloisElement {
 impl GaloisElement {
     pub fn from_u64(u: u64) -> GaloisElement {
         let lu = LargeUint {
-            elements: [u, 0, 0, 0, 0, 0, 0, 0]
+            elements: [u, 0, 0, 0, 0, 0, 0, 0],
         };
         GaloisElement::from_large_uint(lu)
     }
@@ -188,57 +189,60 @@ impl GaloisElement {
         macro_rules! r {
             ($k:ident, $i:expr) => {
                 ($k + $i) % (LIMBS + 1)
-            }
+            };
         }
 
         for k in 0..LIMBS {
-            let m: u64 = INV_MIN_P_MOD_R.wrapping_mul(self.elements[k].wrapping_mul(other.elements[0])
-                                                 .wrapping_add(temp[r!(k, 0)]));
+            let m: u64 = INV_MIN_P_MOD_R.wrapping_mul(
+                self.elements[k]
+                    .wrapping_mul(other.elements[0])
+                    .wrapping_add(temp[r!(k, 0)]),
+            );
             let mut carry = false;
             let mut other_carry = false;
             for i in 0..LIMBS {
                 let u: u128 = m as u128 * P.elements[i] as u128;
 
-                let (res, c) = temp[r!(k,i)].overflowing_add(other_carry as u64);
+                let (res, c) = temp[r!(k, i)].overflowing_add(other_carry as u64);
                 other_carry = c;
-                temp[r!(k,i)] = res;
+                temp[r!(k, i)] = res;
 
-                let (res, c) = temp[r!(k,i)].overflowing_add(u as u64);
+                let (res, c) = temp[r!(k, i)].overflowing_add(u as u64);
                 other_carry |= c;
-                temp[r!(k,i)] = res;
+                temp[r!(k, i)] = res;
 
-                let (res, c) = temp[r!(k,i+1)].overflowing_add(carry as u64);
+                let (res, c) = temp[r!(k, i + 1)].overflowing_add(carry as u64);
                 carry = c;
-                temp[r!(k,i+1)] = res;
+                temp[r!(k, i + 1)] = res;
 
-                let (res, c) = temp[r!(k,i+1)].overflowing_add((u >> 64) as u64);
+                let (res, c) = temp[r!(k, i + 1)].overflowing_add((u >> 64) as u64);
                 carry |= c;
-                temp[r!(k,i+1)] = res;
+                temp[r!(k, i + 1)] = res;
             }
-            temp[r!(k,LIMBS)] += other_carry as u64;
+            temp[r!(k, LIMBS)] += other_carry as u64;
 
             carry = false;
             other_carry = false;
             for i in 0..LIMBS {
                 let u: u128 = self.elements[k] as u128 * other.elements[i] as u128;
 
-                let (res, c) = temp[r!(k,i)].overflowing_add(other_carry as u64);
+                let (res, c) = temp[r!(k, i)].overflowing_add(other_carry as u64);
                 other_carry = c;
-                temp[r!(k,i)] = res;
+                temp[r!(k, i)] = res;
 
-                let (res, c) = temp[r!(k,i)].overflowing_add(u as u64);
+                let (res, c) = temp[r!(k, i)].overflowing_add(u as u64);
                 other_carry |= c;
-                temp[r!(k,i)] = res;
+                temp[r!(k, i)] = res;
 
-                let (res, c) = temp[r!(k,i+1)].overflowing_add(carry as u64);
+                let (res, c) = temp[r!(k, i + 1)].overflowing_add(carry as u64);
                 carry = c;
-                temp[r!(k,i+1)] = res;
+                temp[r!(k, i + 1)] = res;
 
-                let (res, c) = temp[r!(k,i+1)].overflowing_add((u >> 64) as u64);
+                let (res, c) = temp[r!(k, i + 1)].overflowing_add((u >> 64) as u64);
                 carry |= c;
-                temp[r!(k,i+1)] = res;
+                temp[r!(k, i + 1)] = res;
             }
-            temp[r!(k,LIMBS)] += other_carry as u64;
+            temp[r!(k, LIMBS)] += other_carry as u64;
         }
 
         for i in 0..LIMBS {
@@ -249,7 +253,7 @@ impl GaloisElement {
     }
 
     pub fn square(&mut self) -> GaloisElement {
-        self.mul_with(&{*self});
+        self.mul_with(&{ *self });
         *self
     }
 
@@ -343,30 +347,30 @@ mod test {
     #[test]
     fn check_add() {
         let mut one = LargeUint {
-            elements: [1, 0, 0, 0, 0, 0, 0, 0]
+            elements: [1, 0, 0, 0, 0, 0, 0, 0],
         };
 
         let two = LargeUint {
-            elements: [2, 0, 0, 0, 0, 0, 0, 0]
+            elements: [2, 0, 0, 0, 0, 0, 0, 0],
         };
 
         let three = LargeUint {
-            elements: [3, 0, 0, 0, 0, 0, 0, 0]
+            elements: [3, 0, 0, 0, 0, 0, 0, 0],
         };
 
         one.add_from(&two);
         assert_eq!(one, three);
 
         let one = LargeUint {
-            elements: [1, 0, 0, 0, 0, 0, 0, 0]
+            elements: [1, 0, 0, 0, 0, 0, 0, 0],
         };
 
         let mut max_one = LargeUint {
-            elements: [u64::max_value(), 0, 0, 0, 0, 0, 0, 0]
+            elements: [u64::max_value(), 0, 0, 0, 0, 0, 0, 0],
         };
 
         let max_two = LargeUint {
-            elements: [0, 1, 0, 0, 0, 0, 0, 0]
+            elements: [0, 1, 0, 0, 0, 0, 0, 0],
         };
 
         max_one.add_from(&one);
@@ -376,15 +380,15 @@ mod test {
     #[test]
     fn check_sub() {
         let one = LargeUint {
-            elements: [1, 0, 0, 0, 0, 0, 0, 0]
+            elements: [1, 0, 0, 0, 0, 0, 0, 0],
         };
 
         let two = LargeUint {
-            elements: [2, 0, 0, 0, 0, 0, 0, 0]
+            elements: [2, 0, 0, 0, 0, 0, 0, 0],
         };
 
         let mut three = LargeUint {
-            elements: [3, 0, 0, 0, 0, 0, 0, 0]
+            elements: [3, 0, 0, 0, 0, 0, 0, 0],
         };
 
         three.sub_from(&two);
@@ -484,7 +488,7 @@ mod test {
     fn check_complex_impl() {
         let one = GaloisElement::from_u64(1);
         let two = GaloisElement::from_u64(2);
-        assert_eq!(((one - two) * two + one + one + two)/ two, one);
+        assert_eq!(((one - two) * two + one + one + two) / two, one);
     }
 
     #[test]
@@ -504,7 +508,7 @@ mod test {
         assert_eq!(one.bits(), 1);
 
         let one = LargeUint {
-            elements: [0, 1, 1, 1, 1, 1, 0, 2]
+            elements: [0, 1, 1, 1, 1, 1, 0, 2],
         };
 
         assert_eq!(one.bits(), 7 * 64 + 2);

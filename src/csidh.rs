@@ -1,13 +1,14 @@
 use rand::prelude::*;
+use serde::{Deserialize, Serialize};
 
+use crate::galois::{GaloisElement, LargeUint};
 use crate::global;
 use crate::montgomery::{Curve, ProjectivePoint};
-use crate::galois::{LargeUint, GaloisElement};
 
 fn action(curve: &Curve, private: &[i8]) -> LargeUint {
     let mut rng = thread_rng();
 
-    let mut k = [LargeUint::from_u64(4) ;2];
+    let mut k = [LargeUint::from_u64(4); 2];
 
     let mut e = [[0u8; global::NUM_PRIMES]; 2];
 
@@ -84,8 +85,10 @@ fn action(curve: &Curve, private: &[i8]) -> LargeUint {
 }
 
 /// A private key for the CSIDH algorithm
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct CsidhPrivateKey {
-    key: [i8; global::NUM_PRIMES]
+    #[serde(with = "serde_arrays")]
+    key: [i8; global::NUM_PRIMES],
 }
 
 impl CsidhPrivateKey {
@@ -109,9 +112,7 @@ impl CsidhPrivateKey {
             secret[i] = between.sample(&mut rng);
         }
 
-        CsidhPrivateKey {
-            key: secret,
-        }
+        CsidhPrivateKey { key: secret }
     }
 
     /// Gets the associated public key
@@ -128,9 +129,7 @@ impl CsidhPrivateKey {
         let curve = Curve::new(0u32.into(), 1u32.into());
         let a = action(&curve, &self.key);
 
-        CsidhPublicKey {
-            a
-        }
+        CsidhPublicKey { a }
     }
 
     /// Computes the shared secret with another public key
@@ -138,11 +137,11 @@ impl CsidhPrivateKey {
         let their_curve = Curve::new(other.a, 1u32.into());
         let s = action(&their_curve, &self.key);
         s.as_bytes()
-   }
+    }
 }
 
 /// A public key for the CSIDH algorithm
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct CsidhPublicKey {
     a: LargeUint,
 }
-
